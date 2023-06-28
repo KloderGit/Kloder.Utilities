@@ -1,0 +1,30 @@
+name: .NET Core
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build with dotnet
+      run: dotnet build --configuration Release
+    
+    - name: Pack
+      run: dotnet pack --configuration Release
+      
+    - name: Setup Nuget.exe
+      uses: nuget/setup-nuget@v1
+      
+    - name: Add Source
+      run: nuget source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/KloderGit/index.json" -UserName KloderGit -Password ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Push
+      run: dotnet nuget push -s GitHub -k ${{ secrets.GITHUB_TOKEN }} .\Kloder.Utilities\bin\Release\*.nupkg 
