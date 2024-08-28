@@ -1,89 +1,71 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Utilities;
 
+[DebuggerDisplay("{_value}")]
 [JsonConverter(typeof(KeyJsonConverter))]
-[DebuggerDisplay("{Value}")]
-public readonly struct Key<T> : IEquatable<Key<T>>
+public sealed class Key<T> : IEquatable<Key<T>>
 {
-    private Guid Value { get; }
+    private readonly Guid _value;
 
-    public Key() => Value = Guid.NewGuid();
-    public Key(Guid key) => Value = key;
+    public Key() => _value = Guid.NewGuid();
+    public Key(Guid key) => _value = key;
 
-    public override string ToString() => Value.ToString();
-    
-    public bool Equals(Key<T> other)
+    public override string ToString() => _value.ToString();
+
+    public bool Equals(Key<T>? other)
     {
-        return this.Value.Equals(other.Value);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return obj switch
-        {
-            null => false,
-            Key<T> key => Equals(key),
-            Guid guid => Value.Equals(guid),
-            _ => false
-        };
-    }
-
-    public override int GetHashCode()
-    {
-        return Value.GetHashCode();
+        if (ReferenceEquals(null, other)) return false;
+        return ReferenceEquals(this, other) || _value.Equals(other._value);
     }
     
-    public static bool operator ==(Key<T> a, Key<T> b) => a.Value.Equals(b.Value);
-    public static bool operator !=(Key<T> a, Key<T> b) => !a.Value.Equals(b.Value);
-
-    public static implicit operator Guid(Key<T> x)
-    {
-        return x.Value;
-    }
+    public override bool Equals(object? obj) 
+        => ReferenceEquals(this, obj) || obj is Key<T> other && Equals(other);
     
-    public static explicit operator Key<T>(Guid x)
-    {
-        return new Key<T>(x);
-    }
+    private bool Equals(Guid other) => _value.Equals(other);
+
+    public override int GetHashCode() => _value.GetHashCode();
+
+    public static bool operator ==(Key<T> a, Key<T> b) => a._value.Equals(b._value);
+    public static bool operator !=(Key<T> a, Key<T> b) => !a._value.Equals(b._value);
+    public static bool operator ==(Key<T> a, Guid b) => a.Equals(b);
+    public static bool operator !=(Key<T> a, Guid b) => !a.Equals(b);
+    public static bool operator ==(Guid a, Key<T> b) => a.Equals(b);
+    public static bool operator !=(Guid a, Key<T> b) => !a.Equals(b);
+
+    public static implicit operator Guid(Key<T> x) => x._value;
+    public static explicit operator Key<T>(Guid x) => new Key<T>(x);
 }
 
 
-public class KeyJsonConverter : JsonConverterFactory
+public sealed class KeyJsonConverter : JsonConverterFactory
 {
+    private static readonly Dictionary<Type, JsonConverter> Converters = new();
+
     public override bool CanConvert(Type typeToConvert)
+        => typeToConvert.IsGenericType 
+           && typeToConvert.GetGenericTypeDefinition() == typeof(Key<>);
+
+    public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
     {
-        if (!typeToConvert.IsGenericType)
-        {
-            return false;
-        }
+        var keyType = type.GetGenericArguments()[0];
 
-        if (typeToConvert.GetGenericTypeDefinition() != typeof(Key<>))
-        {
-            return false;
-        }
+        if (Converters.TryGetValue(type, out JsonConverter? existingConverter))
+            return existingConverter;
 
-        return true;
-    }
-    
-    public override JsonConverter CreateConverter(
-        Type type,
-        JsonSerializerOptions options)
-    {
-        Type keyType = type.GetGenericArguments()[0];
+        var converter = (JsonConverter)Activator
+            .CreateInstance(typeof(KeyConverter<>).MakeGenericType(keyType))!;
 
-        JsonConverter converter = (JsonConverter)Activator
-            .CreateInstance(
-            typeof(KeyConverter<>).MakeGenericType(
-                new Type[] { keyType }))!;
+        Converters[type] = converter;
 
         return converter;
     }
 
-    private class KeyConverter<T> : JsonConverter<Key<T>>
+    private sealed class KeyConverter<T> : JsonConverter<Key<T>>
     {
         public override Key<T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -93,8 +75,6 @@ public class KeyJsonConverter : JsonConverterFactory
         }
 
         public override void Write(Utf8JsonWriter writer, Key<T> value, JsonSerializerOptions options)
-        {
-            writer.WriteStringValue(value);
-        }
+            => writer.WriteStringValue(value.ToString());
     }
 }

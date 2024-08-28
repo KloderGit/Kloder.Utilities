@@ -1,64 +1,77 @@
 using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace Domain;
+namespace Utilities;
 
+[DebuggerDisplay("{_value}")]
 [JsonConverter(typeof(PhoneJsonConverter))]
-public readonly struct Phone : IEquatable<Phone?>
+public readonly partial struct Phone
 {
-    private const string DigitsOnlyPattern = "[^0-9]";
-    private const string PhoneNumberPattern = @"^(\+?\d{1,3}\s?)?\(?\d{1,3}\)?[\s-]?\d{1,4}[\s-]?\d{1,2}[\s-]?\d{1,2}$";
-    private string OnlyDigitsValue => string.IsNullOrEmpty(value) 
-        ? string.Empty 
-        : Regex.Replace(value, DigitsOnlyPattern, String.Empty);
-
-    private readonly string value = string.Empty;
+    private readonly string _value = string.Empty;
+    private readonly string _digits = string.Empty;
 
     public Phone(string value)
     {
         var phoneString = value.Trim();
-
-        if (string.IsNullOrWhiteSpace(phoneString)) throw new ArgumentException(nameof(value));
-
-        if (Regex.IsMatch(phoneString, PhoneNumberPattern) == false)
-            throw new FormatException("Неверный формат телефона.");
-
-        if (phoneString[0] == '8') phoneString ="+7" + phoneString.Substring(1);
-        
-        this.value = phoneString;
+        if (IsValidPhoneNumber(phoneString) == false) throw new ArgumentException("Invalid phone number", nameof(value));
+        if (phoneString[0] == '8') phoneString = string.Concat("+7", phoneString.AsSpan(1));
+        _value = phoneString;
+        _digits = GetJustDigits(phoneString);
     }
 
-    public bool Equals(Phone? other)
-    {
-        if (other == null) return false; 
-        return OnlyDigitsValue == other?.OnlyDigitsValue;
-    }
+    public bool Equals(Phone other) => _digits == other._digits;
+    
+    /// <summary>
+    /// Важно, стараться не использовать в циклических операциях например - 'phonesArray.intersect(stringArray)'
+    /// т.к для каждого string будет вызываться GetJustDigits.
+    /// Лучше изменить порядок - stringArray.intersect(phonesArray) т.к приведение Phone в string не вызовет доп действий
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public bool Equals(string other) => _digits == GetJustDigits(other);
     
     public override bool Equals(object? obj)
     {
-        if (obj == null) return false;
-        if ((obj is Phone) == false) return false;
-        var other = (Phone)obj;
-        return Equals(other);
+        var result = obj switch
+        {
+            Phone other => Equals(other),
+            string other => Equals(other),
+            _ => false
+        };
+        
+        return result;
     }
     
-    public static bool operator ==(Phone phone1, Phone phone2)
-    {
-        return phone1.Equals(phone2);
-    }
+    public override int GetHashCode() => _digits.GetHashCode();
     
-    public static bool operator !=(Phone phone1, Phone phone2)
+    public override string ToString() => _value;
+
+    
+    private static bool IsValidPhoneNumber(string phoneNumber) => PhoneNumberRegex().IsMatch(phoneNumber);
+    
+
+    private static string GetJustDigits(string input)
     {
-        return !(phone1 == phone2);
+        var digits = input.Where(char.IsDigit).ToArray();
+        return new string(digits);
     }
 
-    public override int GetHashCode()
-    {
-        return OnlyDigitsValue.GetHashCode();
-    }
+    public static implicit operator string(Phone x) => x._value;
+    public static explicit operator Phone(string x) => new(x);
+    
+    
+    public static bool operator ==(Phone left, Phone right) => left.Equals(right);
+    public static bool operator !=(Phone left, Phone right) => !left.Equals(right);
+    public static bool operator ==(Phone left, string right) => left.Equals(right);
+    public static bool operator !=(Phone left, string right) => !left.Equals(right);
+    public static bool operator ==(string left, Phone right) => left.Equals(right);
+    public static bool operator !=(string left, Phone right) => !left.Equals(right);
 
+    
     public static bool TryParse(string value, out Phone? phone)
     {
         try
@@ -73,42 +86,24 @@ public readonly struct Phone : IEquatable<Phone?>
         }
     }
 
-    public static implicit operator string(Phone x)
-    {
-        return x.value;
-    }
-    
-    public static explicit operator Phone(string x)
-    {
-        try
-        {
-            var phone = new Phone(x);
-            return phone;
-        }
-        catch (Exception e)
-        {
-            throw new ArgumentException(e.Message);
-        }
-    }
-    public override string ToString() => value;
+
+    [GeneratedRegex(@"^(\+?\d{1,3}\s?)?\(?\d{1,3}\)?[\s-]?\d{1,4}[\s-]?\d{1,2}[\s-]?\d{1,2}$")]
+    private static partial Regex PhoneNumberRegex();
 }
 
 
 public class PhoneJsonConverter : JsonConverter<Phone>
 {
-    public override Phone Read(
-        ref Utf8JsonReader reader,
-        Type typeToConvert,
-        JsonSerializerOptions options)
+    public override Phone Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var result = Phone.TryParse(reader.GetString()!, out var phone);
+        var phoneString = reader.GetString();
         
-        return phone.Value;
+        if (string.IsNullOrWhiteSpace(phoneString) || !Phone.TryParse(phoneString, out var phone)) 
+            throw new JsonException($"Invalid phone number format: '{phoneString}'");
+
+        return phone!.Value;
     }
     
-    public override void Write(
-        Utf8JsonWriter writer,
-        Phone phone,
-        JsonSerializerOptions options) =>
-        writer.WriteStringValue(phone.ToString());
+    public override void Write(Utf8JsonWriter writer, Phone phone, JsonSerializerOptions options) 
+        => writer.WriteStringValue(phone);
 }

@@ -1,46 +1,59 @@
 using System;
-using System.Net.Mail;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
-namespace Domain;
+namespace Utilities;
 
+[DebuggerDisplay("{_value}")]
 [JsonConverter(typeof(EmailJsonConverter))]
-public readonly struct Email : IEquatable<Email>
+public readonly partial struct Email
 {
-    private readonly string value = string.Empty;
-
+    private readonly string _value = string.Empty;
+    
     public Email(string value)
     {
-        this.value = new MailAddress(value).Address;
+        var emailString = value.Trim().ToLower();
+        if (IsValidEmail(emailString) == false) throw new ArgumentException("Invalid email address", nameof(value));
+        _value = emailString;
     }
 
-    public bool Equals(Email other)
-    {
-        return value.Equals(other.value, StringComparison.OrdinalIgnoreCase);
-    }
+    public override string ToString() => _value;
     
+    public bool Equals(Email other) => _value == other._value;
+    public bool Equals(string other) => _value.Equals(other.Trim(), StringComparison.CurrentCultureIgnoreCase);
     public override bool Equals(object? obj)
     {
-        if (obj == null) return false;
-        var other = (Email)obj;
-        return Equals(other);
-    }
-    
-    public static bool operator ==(Email email1, Email email2)
-    {
-        return email1.value == email2.value;
-    }
-    
-    public static bool operator !=(Email email1, Email email2)
-    {
-        return !(email1 == email2);
+        var result = obj switch
+        {
+            Email other => Equals(other),
+            string other => Equals(other),
+            _ => false
+        };
+        
+        return result;
     }
 
-    public override int GetHashCode()
-    {
-        return value.GetHashCode();
-    }
+    public override int GetHashCode() => _value.GetHashCode();
+    
+    
+    public static implicit operator string(Email x) => x._value;
+    public static explicit operator Email(string x) => new(x);
+    
+    
+    public static bool operator ==(Email left, Email right) => left.Equals(right);
+    public static bool operator !=(Email left, Email right) => !left.Equals(right);
+    
+    public static bool operator ==(Email left, string right) => left.Equals(right);
+    public static bool operator !=(Email left, string right) => !left.Equals(right);
+    
+    public static bool operator ==(string left, Email right) => left.Equals(right);
+    public static bool operator !=(string left, Email right) => !left.Equals(right);
+    
+    
+    private static bool IsValidEmail(string email) => EmailTemplateRegExp().IsMatch(email);
+    
     
     public static bool TryParse(string value, out Email? email)
     {
@@ -56,41 +69,23 @@ public readonly struct Email : IEquatable<Email>
         }
     }
     
-    public static implicit operator string(Email x)
-    {
-        return x.value;
-    }
-    
-    public static explicit operator Email(string x)
-    {
-        try
-        {
-            var email = new Email(x);
-            return email;
-        }
-        catch (Exception e)
-        {
-            throw new ArgumentException(e.Message);
-        }
-    }    
-    public override string ToString() => value;
+    [GeneratedRegex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")]
+    private static partial Regex EmailTemplateRegExp();
 }
+
 
 public class EmailJsonConverter : JsonConverter<Email>
 {
-    public override Email Read(
-        ref Utf8JsonReader reader,
-        Type typeToConvert,
-        JsonSerializerOptions options)
+    public override Email Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var result = Email.TryParse(reader.GetString()!, out var email);
+        var emailString = reader.GetString();
         
-        return email.Value;
+        if (string.IsNullOrWhiteSpace(emailString) || !Email.TryParse(emailString, out var email)) 
+            throw new JsonException($"Invalid email address format: '{emailString}'");
+
+        return email!.Value;
     }
     
-    public override void Write(
-        Utf8JsonWriter writer,
-        Email email,
-        JsonSerializerOptions options) =>
-        writer.WriteStringValue(email.ToString());
+    public override void Write(Utf8JsonWriter writer, Email email, JsonSerializerOptions options) 
+        => writer.WriteStringValue(email.ToString());
 }
