@@ -5,22 +5,22 @@ using System.Text.Json.Serialization;
 
 namespace Utilities;
 
-[DebuggerDisplay("{value}")]
+[DebuggerDisplay("{_value}")]
 public record Title
 {
-    private string value;
+    private string _value;
 
     public Title()
     {
-        value = string.Empty;
+        _value = string.Empty;
     }
     public Title(string value)
     {
         if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Значение Title не указано");
-        this.value = value;
+        _value = value;
     }
     
-    public static implicit operator string(Title x) => x.value;
+    public static implicit operator string(Title x) => x._value;
     public static explicit operator Title(string x) => new Title(x);
 }
 

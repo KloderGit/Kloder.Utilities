@@ -89,3 +89,28 @@ public class EmailJsonConverter : JsonConverter<Email>
     public override void Write(Utf8JsonWriter writer, Email email, JsonSerializerOptions options) 
         => writer.WriteStringValue(email.ToString());
 }
+
+public class NullableEmailJsonConverter : JsonConverter<Email?>
+{
+    public override Email? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var emailString = reader.GetString();
+        
+        if (string.IsNullOrWhiteSpace(emailString) || !Email.TryParse(emailString, out var email)) 
+            return null;
+
+        return email!.Value;
+    }
+    
+    public override void Write(Utf8JsonWriter writer, Email? email, JsonSerializerOptions options)
+    {
+        if(email is null)
+        {
+            writer.WriteNullValue();
+        }
+        else
+        {
+            writer.WriteStringValue(email.ToString());
+        }
+    }
+}

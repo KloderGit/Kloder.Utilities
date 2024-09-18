@@ -8,7 +8,7 @@ namespace Utilities;
 
 [DebuggerDisplay("{_value}")]
 [JsonConverter(typeof(KeyJsonConverter))]
-public sealed class Key<T> : IEquatable<Key<T>>
+public sealed record Key<T>
 {
     private readonly Guid _value;
 
@@ -17,21 +17,21 @@ public sealed class Key<T> : IEquatable<Key<T>>
 
     public override string ToString() => _value.ToString();
 
-    public bool Equals(Key<T>? other)
-    {
-        if (ReferenceEquals(null, other)) return false;
-        return ReferenceEquals(this, other) || _value.Equals(other._value);
-    }
-    
-    public override bool Equals(object? obj) 
-        => ReferenceEquals(this, obj) || obj is Key<T> other && Equals(other);
-    
+    // public bool Equals(Key<T>? other)
+    // {
+    //     if (ReferenceEquals(null, other)) return false;
+    //     return ReferenceEquals(this, other) || _value.Equals(other._value);
+    // }
+    //
+    // public override bool Equals(object? obj) 
+    //     => ReferenceEquals(this, obj) || obj is Key<T> other && Equals(other);
+    //
     private bool Equals(Guid other) => _value.Equals(other);
+    //
+    // public override int GetHashCode() => _value.GetHashCode();
 
-    public override int GetHashCode() => _value.GetHashCode();
-
-    public static bool operator ==(Key<T> a, Key<T> b) => a._value.Equals(b._value);
-    public static bool operator !=(Key<T> a, Key<T> b) => !a._value.Equals(b._value);
+    // public static bool operator ==(Key<T> a, Key<T> b) => a._value.Equals(b._value);
+    // public static bool operator !=(Key<T> a, Key<T> b) => !a._value.Equals(b._value);
     public static bool operator ==(Key<T> a, Guid b) => a.Equals(b);
     public static bool operator !=(Key<T> a, Guid b) => !a.Equals(b);
     public static bool operator ==(Guid a, Key<T> b) => a.Equals(b);

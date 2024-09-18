@@ -47,14 +47,14 @@ public record BuildingLocation : Location<BuildingLocation>
     public string City { get; }
     public string Street { get; }
     public string BuildingNumber { get; }
-    public string EntranceNumber { get; }
+    public string? EntranceNumber { get; }
 
-    internal BuildingLocation(
+    public BuildingLocation(
         Title title,
         string city,
         string street,
         string buildingNumber,
-        string entranceNumber,
+        string? entranceNumber,
         uint zip = 0,
         string? description = null)
     {

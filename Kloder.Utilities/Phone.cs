@@ -107,3 +107,28 @@ public class PhoneJsonConverter : JsonConverter<Phone>
     public override void Write(Utf8JsonWriter writer, Phone phone, JsonSerializerOptions options) 
         => writer.WriteStringValue(phone);
 }
+
+public class NullablePhoneJsonConverter : JsonConverter<Phone?>
+{
+    public override Phone? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var phoneString = reader.GetString();
+        
+        if (string.IsNullOrWhiteSpace(phoneString) || !Phone.TryParse(phoneString, out var phone)) 
+            return null;
+
+        return phone!.Value;
+    }
+    
+    public override void Write(Utf8JsonWriter writer, Phone? phone, JsonSerializerOptions options)
+    {
+        if(phone is null)
+        {
+            writer.WriteNullValue();
+        }
+        else
+        {
+            writer.WriteStringValue(phone.ToString());
+        }
+    }
+}
