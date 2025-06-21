@@ -39,6 +39,8 @@ public sealed record Key<T>
 
     public static implicit operator Guid(Key<T> x) => x._value;
     public static explicit operator Key<T>(Guid x) => new Key<T>(x);
+
+    public Key<TResult> As<TResult>() => new Key<TResult>(_value);
 }
 
 
