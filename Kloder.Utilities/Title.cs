@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 namespace Utilities;
 
 [DebuggerDisplay("{_value}")]
+[JsonConverter(typeof(TitleJsonConverter))]
 public record Title
 {
     private string _value;

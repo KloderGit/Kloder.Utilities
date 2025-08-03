@@ -14,29 +14,12 @@ public sealed record Key<T>
 
     public Key() => _value = Guid.NewGuid();
     public Key(Guid key) => _value = key;
-
     public override string ToString() => _value.ToString();
-
-    // public bool Equals(Key<T>? other)
-    // {
-    //     if (ReferenceEquals(null, other)) return false;
-    //     return ReferenceEquals(this, other) || _value.Equals(other._value);
-    // }
-    //
-    // public override bool Equals(object? obj) 
-    //     => ReferenceEquals(this, obj) || obj is Key<T> other && Equals(other);
-    //
     private bool Equals(Guid other) => _value.Equals(other);
-    //
-    // public override int GetHashCode() => _value.GetHashCode();
-
-    // public static bool operator ==(Key<T> a, Key<T> b) => a._value.Equals(b._value);
-    // public static bool operator !=(Key<T> a, Key<T> b) => !a._value.Equals(b._value);
     public static bool operator ==(Key<T> a, Guid b) => a.Equals(b);
     public static bool operator !=(Key<T> a, Guid b) => !a.Equals(b);
     public static bool operator ==(Guid a, Key<T> b) => a.Equals(b);
     public static bool operator !=(Guid a, Key<T> b) => !a.Equals(b);
-
     public static implicit operator Guid(Key<T> x) => x._value;
     public static explicit operator Key<T>(Guid x) => new Key<T>(x);
 
