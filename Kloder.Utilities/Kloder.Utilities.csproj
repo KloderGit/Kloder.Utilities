@@ -5,7 +5,7 @@
     <LangVersion>12</LangVersion>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <PackageVersion>1.1.6</PackageVersion>
+    <PackageVersion>1.2.0</PackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
