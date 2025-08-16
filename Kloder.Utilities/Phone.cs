@@ -9,71 +9,63 @@ namespace Utilities;
 
 [DebuggerDisplay("{_value}")]
 [JsonConverter(typeof(PhoneJsonConverter))]
-public readonly partial struct Phone
+public partial class Phone : IEquatable<Phone>, IEquatable<string>
 {
-    private readonly string _value = string.Empty;
-    private readonly string _digits = string.Empty;
+    private readonly string _value;
+    private readonly string _digits;
 
     public Phone(string value)
     {
-        var phoneString = value.Trim();
-        if (IsValidPhoneNumber(phoneString) == false) throw new ArgumentException("Invalid phone number", nameof(value));
-        if (phoneString[0] == '8') phoneString = string.Concat("+7", phoneString.AsSpan(1));
-        _value = phoneString;
-        _digits = GetJustDigits(phoneString);
+        ArgumentNullException.ThrowIfNull(value);
+        var trimmed = value.Trim();
+        if (!IsValidPhoneNumber(trimmed))
+            throw new ArgumentException("Invalid phone number", nameof(value));
+
+        _digits = GetJustDigits(trimmed);
+
+        // Спец-правило РФ: 8XXXXXXXXXX (11 цифр) -> +7XXXXXXXXXX
+        if (_digits.Length == 11 && _digits[0] == '8') _value = "+7" + _digits[1..];
+        else _value = "+" + _digits;
     }
 
-    public bool Equals(Phone other) => _digits == other._digits;
-    
-    /// <summary>
-    /// Важно, стараться не использовать в циклических операциях например - 'phonesArray.intersect(stringArray)'
-    /// т.к для каждого string будет вызываться GetJustDigits.
-    /// Лучше изменить порядок - stringArray.intersect(phonesArray) т.к приведение Phone в string не вызовет доп действий
-    /// </summary>
-    /// <param name="other"></param>
-    /// <returns></returns>
-    public bool Equals(string other) => _digits == GetJustDigits(other);
-    
-    public override bool Equals(object? obj)
+    public bool Equals(Phone? other) =>
+        other is not null && string.Equals(_digits, other._digits, StringComparison.Ordinal);
+
+    public bool Equals(string? other) =>
+        other is not null && string.Equals(_digits, GetJustDigits(other), StringComparison.Ordinal);
+
+    public override bool Equals(object? obj) => obj switch
     {
-        var result = obj switch
-        {
-            Phone other => Equals(other),
-            string other => Equals(other),
-            _ => false
-        };
-        
-        return result;
-    }
+        Phone p  => Equals(p),
+        string s => Equals(s),
+        _        => false
+    };
     
-    public override int GetHashCode() => _digits.GetHashCode();
+    public override int GetHashCode() => _digits.GetHashCode(StringComparison.Ordinal);
     
     public override string ToString() => _value;
 
-    
-    private static bool IsValidPhoneNumber(string phoneNumber) => PhoneNumberRegex().IsMatch(phoneNumber);
-    
 
-    private static string GetJustDigits(string input)
+    public static implicit operator string? (Phone? x) => x?._value;
+    public static explicit operator Phone? (string? x) => TryParse(x, out var p) ? p : null;
+    
+    
+    public static bool operator ==(Phone? left, Phone? right) => Equals(left, right);
+    public static bool operator !=(Phone? left, Phone? right) => !Equals(left, right);
+
+    public static bool operator ==(Phone? left, string? right) => left?.Equals(right) ?? right is null;
+    public static bool operator !=(Phone? left, string? right) => !(left == right);
+
+    public static bool operator ==(string? left, Phone? right) => right?.Equals(left) ?? left is null;
+    public static bool operator !=(string? left, Phone? right) => !(left == right);
+
+    
+    public static bool TryParse(string? value, out Phone? phone)
     {
-        var digits = input.Where(char.IsDigit).ToArray();
-        return new string(digits);
-    }
+        phone = null;
+        if (string.IsNullOrWhiteSpace(value)) return false;
+        if (!IsValidPhoneNumber(value)) return false;
 
-    public static implicit operator string(Phone x) => x._value;
-    public static explicit operator Phone(string x) => new(x);
-    
-    
-    public static bool operator ==(Phone left, Phone right) => left.Equals(right);
-    public static bool operator !=(Phone left, Phone right) => !left.Equals(right);
-    public static bool operator ==(Phone left, string right) => left.Equals(right);
-    public static bool operator !=(Phone left, string right) => !left.Equals(right);
-    public static bool operator ==(string left, Phone right) => left.Equals(right);
-    public static bool operator !=(string left, Phone right) => !left.Equals(right);
-
-    
-    public static bool TryParse(string value, out Phone? phone)
-    {
         try
         {
             phone = new Phone(value);
@@ -86,49 +78,34 @@ public readonly partial struct Phone
         }
     }
 
+    private static bool IsValidPhoneNumber(string phoneNumber) => PhoneNumberRegex().IsMatch(phoneNumber);
 
+
+    private static string GetJustDigits(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return string.Empty;
+        var arr = input.Where(char.IsDigit).ToArray();
+        return new string(arr);
+    }
+    
+    
     [GeneratedRegex(@"^(\+?\d{1,3}\s?)?\(?\d{1,3}\)?[\s-]?\d{1,4}[\s-]?\d{1,2}[\s-]?\d{1,2}$")]
     private static partial Regex PhoneNumberRegex();
 }
 
 
-public class PhoneJsonConverter : JsonConverter<Phone>
-{
-    public override Phone Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-    {
-        var phoneString = reader.GetString();
-        
-        if (string.IsNullOrWhiteSpace(phoneString) || !Phone.TryParse(phoneString, out var phone)) 
-            throw new JsonException($"Invalid phone number format: '{phoneString}'");
-
-        return phone!.Value;
-    }
-    
-    public override void Write(Utf8JsonWriter writer, Phone phone, JsonSerializerOptions options) 
-        => writer.WriteStringValue(phone);
-}
-
-public class NullablePhoneJsonConverter : JsonConverter<Phone?>
+public class PhoneJsonConverter : JsonConverter<Phone?>
 {
     public override Phone? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        var phoneString = reader.GetString();
-        
-        if (string.IsNullOrWhiteSpace(phoneString) || !Phone.TryParse(phoneString, out var phone)) 
-            return null;
-
-        return phone!.Value;
+        if (reader.TokenType == JsonTokenType.Null) return null;
+        var s = reader.GetString();
+        return Phone.TryParse(s, out var phone) ? phone : null;
     }
-    
+
     public override void Write(Utf8JsonWriter writer, Phone? phone, JsonSerializerOptions options)
     {
-        if(phone is null)
-        {
-            writer.WriteNullValue();
-        }
-        else
-        {
-            writer.WriteStringValue(phone.ToString());
-        }
+        if (phone is null) writer.WriteNullValue();
+        else writer.WriteStringValue(phone.ToString());
     }
 }
