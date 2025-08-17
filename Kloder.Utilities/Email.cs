@@ -12,7 +12,7 @@ public partial class Email : IEquatable<Email>, IEquatable<string>
 {
     private readonly string _value;
 
-    private Email() {}
+    protected Email() {}
 
     public Email(string value)
     {
