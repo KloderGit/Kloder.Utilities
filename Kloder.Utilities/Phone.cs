@@ -11,8 +11,8 @@ namespace Utilities;
 [JsonConverter(typeof(PhoneJsonConverter))]
 public partial class Phone : IEquatable<Phone>, IEquatable<string>
 {
-    private readonly string _value;
-    private readonly string _digits;
+    protected readonly string _value;
+    protected readonly string _digits;
 
     protected Phone() {}
 

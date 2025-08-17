@@ -7,8 +7,8 @@ namespace Utilities;
 
 public record Period : IEnumerable<DateOnly>, IComparable<Period>
 {
-    private readonly DateOnly _start;
-    private readonly DateOnly _finish;
+    protected readonly DateOnly _start;
+    protected readonly DateOnly _finish;
 
     public DateOnly Start => _start;
     public DateOnly Finish => _finish;

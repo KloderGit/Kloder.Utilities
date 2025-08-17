@@ -10,7 +10,7 @@ namespace Utilities;
 [JsonConverter(typeof(EmailJsonConverter))]
 public partial class Email : IEquatable<Email>, IEquatable<string>
 {
-    private readonly string _value;
+    protected readonly string _value;
 
     protected Email() {}
 
