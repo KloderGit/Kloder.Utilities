@@ -14,6 +14,8 @@ public record Period : IEnumerable<DateOnly>, IComparable<Period>
     public DateOnly Finish => _finish;
     public int Duration => _finish.DayNumber - _start.DayNumber + 1;
 
+    private Period() {}
+
     public Period(DateOnly start, DateOnly finish)
     {
         var (validatedStart, validatedFinish) = ValidateParams(start, finish);

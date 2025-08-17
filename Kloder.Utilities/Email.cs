@@ -11,7 +11,9 @@ namespace Utilities;
 public partial class Email : IEquatable<Email>, IEquatable<string>
 {
     private readonly string _value;
-    
+
+    private Email() {}
+
     public Email(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

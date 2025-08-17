@@ -14,6 +14,8 @@ public partial class Phone : IEquatable<Phone>, IEquatable<string>
     private readonly string _value;
     private readonly string _digits;
 
+    private Phone() {}
+
     public Phone(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
