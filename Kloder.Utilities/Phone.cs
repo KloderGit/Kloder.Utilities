@@ -7,35 +7,32 @@ using System.Text.RegularExpressions;
 
 namespace Utilities;
 
-[DebuggerDisplay("{_value}")]
+[DebuggerDisplay("{Value}")]
 [JsonConverter(typeof(PhoneJsonConverter))]
 public partial class Phone : IEquatable<Phone>, IEquatable<string>
 {
-    protected readonly string _value;
-    protected readonly string _digits;
+    protected readonly string Value;
+    protected readonly string Digits;
 
     protected Phone() {}
 
     public Phone(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        var trimmed = value.Trim();
-        if (!IsValidPhoneNumber(trimmed))
+        if (!IsValidPhoneNumber(value))
             throw new ArgumentException("Invalid phone number", nameof(value));
 
-        _digits = GetJustDigits(trimmed);
-
-        // Спец-правило РФ: 8XXXXXXXXXX (11 цифр) -> +7XXXXXXXXXX
-        if (_digits.Length == 11 && _digits[0] == '8') _value = "+7" + _digits[1..];
-        else _value = "+" + _digits;
+        var digits = NormalizeDigits(value);
+        Digits = digits;
+        Value  = "+" + digits; 
     }
 
     public bool Equals(Phone? other) =>
-        other is not null && string.Equals(_digits, other._digits, StringComparison.Ordinal);
+        other is not null && string.Equals(Digits, other.Digits, StringComparison.Ordinal);
 
     public bool Equals(string? other) =>
-        other is not null && string.Equals(_digits, GetJustDigits(other), StringComparison.Ordinal);
-
+        other is not null && string.Equals(Digits, NormalizeDigits(other), StringComparison.Ordinal);
+    
     public override bool Equals(object? obj) => obj switch
     {
         Phone p  => Equals(p),
@@ -43,12 +40,24 @@ public partial class Phone : IEquatable<Phone>, IEquatable<string>
         _        => false
     };
     
-    public override int GetHashCode() => _digits.GetHashCode(StringComparison.Ordinal);
+    private static string NormalizeDigits(string input)
+    {
+        var d = GetJustDigits(input.Trim());
+
+        if (d.StartsWith("00")) d = d[2..];
+
+        if (d.Length == 11 && d[0] == '8')
+            d = "7" + d[1..];
+
+        return d;
+    }
     
-    public override string ToString() => _value;
+    public override int GetHashCode() => Digits.GetHashCode(StringComparison.Ordinal);
+    
+    public override string ToString() => Value;
 
 
-    public static implicit operator string? (Phone? x) => x?._value;
+    public static implicit operator string? (Phone? x) => x?.Value;
     public static explicit operator Phone? (string? x) => TryParse(x, out var p) ? p : null;
     
     
