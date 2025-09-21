@@ -100,7 +100,7 @@ public partial class Phone : IEquatable<Phone>, IEquatable<string>
     }
     
     
-    [GeneratedRegex(@"^(\+?\d{1,3}\s?)?\(?\d{1,3}\)?[\s-]?\d{1,4}[\s-]?\d{1,2}[\s-]?\d{1,2}$")]
+    [GeneratedRegex(@"^(\+?\d{1,4}[\s-]?)?\(?\d{2,4}\)?[\s-]?\d{2,4}[\s-]?\d{1,4}[\s-]?\d{0,4}$")]
     private static partial Regex PhoneNumberRegex();
 }
 
