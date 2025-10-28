@@ -23,6 +23,8 @@ public abstract record Location<T> : Location
 public record InternetLocation : Location<InternetLocation>
 {
     public Uri uri { get; }
+    
+    private InternetLocation() {}
 
     internal InternetLocation(Title title, string url, string? description = null)
     {
@@ -50,6 +52,8 @@ public record BuildingLocation : Location<BuildingLocation>
     public string Street { get; }
     public string BuildingNumber { get; }
     public string? EntranceNumber { get; }
+
+    private BuildingLocation() {}
 
     public BuildingLocation(
         Title title,
