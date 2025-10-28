@@ -1,4 +1,6 @@
 using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Utilities;
 
@@ -116,4 +118,53 @@ public enum PlacementType
     Building,
     Internet,
     Outdoor
+}
+
+
+public sealed class LocationJsonConverter : JsonConverter<Location>
+{
+    public override Location? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        using var doc = JsonDocument.ParseValue(ref reader);
+        var root = doc.RootElement;
+
+        if (!root.TryGetProperty(nameof(Location.PlacementType), out var ptProp))
+            throw new JsonException($"'{nameof(Location.PlacementType)}' is required for Location polymorphic deserialization.");
+
+        var placementType = ptProp.ValueKind switch
+        {
+            JsonValueKind.Number => (PlacementType)ptProp.GetInt32(),
+            JsonValueKind.String when Enum.TryParse<PlacementType>(ptProp.GetString(), true, out var e) => e,
+            _ => throw new JsonException($"Invalid '{nameof(Location.PlacementType)}' token kind: {ptProp.ValueKind}.")
+        };
+
+        var targetType = placementType switch
+        {
+            PlacementType.Building => typeof(BuildingLocation),
+            PlacementType.Internet => typeof(InternetLocation),
+            //PlacementType.Outdoor  => typeof(OutdoorLocation),  // TODO: реализовать этот тип
+            _ => throw new NotSupportedException($"Unsupported PlacementType '{placementType}'.")
+        };
+
+        var json = root.GetRawText();
+        return (Location?)JsonSerializer.Deserialize(json, targetType, options);
+    }
+
+    public override void Write(Utf8JsonWriter writer, Location value, JsonSerializerOptions options)
+    {
+        switch (value)
+        {
+            case BuildingLocation b:
+                JsonSerializer.Serialize(writer, b, options);
+                return;
+            case InternetLocation i: // TODO: реализовать этот тип
+                JsonSerializer.Serialize(writer, i, options);
+                return;
+            // case OutdoorLocation o:  // TODO: реализовать этот тип
+            //     JsonSerializer.Serialize(writer, o, options);
+            //     return;
+            default:
+                throw new NotSupportedException($"Unsupported Location subtype '{value.GetType()}'.");
+        }
+    }
 }
