@@ -1,14 +1,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Utilities;
 
+[JsonConverter(typeof(PeriodJsonConverter))]
 public record Period : IEnumerable<DateOnly>, IComparable<Period>
 {
-    protected readonly DateOnly _start;
-    protected readonly DateOnly _finish;
+    private readonly DateOnly _start;
+    private readonly DateOnly _finish;
 
     public DateOnly Start => _start;
     public DateOnly Finish => _finish;
@@ -37,20 +39,24 @@ public record Period : IEnumerable<DateOnly>, IComparable<Period>
 
     public IReadOnlyCollection<DateOnly> Intersection(Period other)
     {
-        if (ReferenceEquals(other, null)) return ReadOnlyCollection<DateOnly>.Empty;
+        if (ReferenceEquals(other, null))
+            return Array.Empty<DateOnly>();
 
         var start = Start > other.Start ? Start : other.Start;
         var end = Finish < other.Finish ? Finish : other.Finish;
 
-        if (start > end) return Array.Empty<DateOnly>();
+        if (start > end)
+            return Array.Empty<DateOnly>();
 
-        var intersectionDates = new List<DateOnly>();
-        for (DateOnly date = start; date <= end; date = date.AddDays(1))
+        var days = end.DayNumber - start.DayNumber + 1;
+        var result = new DateOnly[days];
+
+        for (var i = 0; i < days; i++)
         {
-            intersectionDates.Add(date);
+            result[i] = start.AddDays(i);
         }
 
-        return intersectionDates.AsReadOnly();
+        return result;
     }
 
     public int IntersectCount(Period other) => ReferenceEquals(other, null) ? 0 : IntersectCount(this, other);
@@ -122,4 +128,64 @@ public enum PeriodComparerTypeEnum
     Start,
     Finish,
     Duration
+}
+
+public class PeriodJsonConverter : JsonConverter<Period>
+{
+    public override Period Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartObject)
+            throw new JsonException();
+
+        DateOnly? start = null;
+        DateOnly? finish = null;
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject)
+                break;
+
+            if (reader.TokenType != JsonTokenType.PropertyName)
+                throw new JsonException();
+
+            string propertyName = reader.GetString();
+
+            switch (propertyName?.ToLowerInvariant())
+            {
+                case "start":
+                    reader.Read();
+                    start = JsonSerializer.Deserialize<DateOnly>(ref reader, options);
+                    break;
+                case "finish":
+                    reader.Read();
+                    finish = JsonSerializer.Deserialize<DateOnly>(ref reader, options);
+                    break;
+                default:
+                    reader.Skip();
+                    break;
+            }
+        }
+
+        if (!start.HasValue || !finish.HasValue)
+            throw new JsonException("Both start and finish dates are required");
+
+        return new Period(start.Value, finish.Value);
+    }
+
+    public override void Write(Utf8JsonWriter writer, Period value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+    
+        var propertyNamingPolicy = options.PropertyNamingPolicy;
+        var startPropertyName = propertyNamingPolicy?.ConvertName(nameof(value.Start)) ?? nameof(value.Start).ToLower();
+        var finishPropertyName = propertyNamingPolicy?.ConvertName(nameof(value.Finish)) ?? nameof(value.Finish).ToLower();
+    
+        writer.WritePropertyName(startPropertyName);
+        JsonSerializer.Serialize(writer, value.Start, options);
+    
+        writer.WritePropertyName(finishPropertyName);
+        JsonSerializer.Serialize(writer, value.Finish, options);
+    
+        writer.WriteEndObject();
+    }
 }
