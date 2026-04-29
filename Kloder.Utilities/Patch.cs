@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -12,18 +13,31 @@ public readonly record struct Patch<T>
     public bool HasValue { get; init; }
     public T? Value { get; init; }
 
-    public Patch()
-    {
-        HasValue = false;
-        Value = default;
-    }
-
     public Patch(T? value)
     {
         HasValue = true;
         Value = value;
     }
 }
+
+
+public readonly record struct CollectionPatch<T>
+{
+    /// <summary>Новые элементы для добавления</summary>
+    public List<T>? Added { get; init; }
+    
+    /// <summary>ID элементов для удаления</summary>
+    public List<Guid>? RemovedIds { get; init; }
+    
+    /// <summary>Элементы для обновления (должны содержать Id)</summary>
+    public List<T>? Updated { get; init; }
+    
+    public bool HasAdded => Added is { Count: > 0 };
+    public bool HasRemoved => RemovedIds is { Count: > 0 };
+    public bool HasUpdated => Updated is { Count: > 0 };
+    public bool IsEmpty => !HasAdded && !HasRemoved && !HasUpdated;
+}
+
 
 public class PatchJsonConverterFactory : JsonConverterFactory
 {
