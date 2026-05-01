@@ -56,6 +56,81 @@ public class PatchTests
         }
 
         [Fact]
+        public void ApplyAction_ShouldInvokeAction_WhenHasValue()
+        {
+            var patch = new Patch<string>("hello");
+            string? captured = null;
+
+            patch.Apply(v => captured = v);
+
+            Assert.Equal("hello", captured);
+        }
+
+        [Fact]
+        public void ApplyAction_ShouldNotInvokeAction_WhenDefault()
+        {
+            Patch<string> patch = default;
+            var invoked = false;
+
+            patch.Apply(_ => invoked = true);
+
+            Assert.False(invoked);
+        }
+
+        [Fact]
+        public void ApplyAction_ShouldPassNull_WhenValueIsNull()
+        {
+            var patch = new Patch<string?>(null);
+            var invoked = false;
+            string? captured = "not null";
+
+            patch.Apply(v => { invoked = true; captured = v; });
+
+            Assert.True(invoked);
+            Assert.Null(captured);
+        }
+
+        [Fact]
+        public void ApplyFunc_ShouldReturnMappedResult_WhenHasValue()
+        {
+            var patch = new Patch<int>(42);
+
+            var result = patch.Apply(
+                v => Result<int>.Success(v * 2),
+                Result<int>.Success(0));
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal(84, result.Value);
+        }
+
+        [Fact]
+        public void ApplyFunc_ShouldReturnDefaultValue_WhenDefault()
+        {
+            Patch<int> patch = default;
+            var fallback = Result<string>.Success("fallback");
+
+            var result = patch.Apply(
+                v => Result<string>.Success(v.ToString()!),
+                fallback);
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("fallback", result.Value);
+        }
+
+        [Fact]
+        public void ApplyFunc_ShouldPassNull_WhenValueIsNull()
+        {
+            var patch = new Patch<string?>(null);
+
+            var result = patch.Apply(
+                v => Result<string?>.Success(v ?? "was null"),
+                Result<string?>.Success("default"));
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("was null", result.Value);
+        }
+
+        [Fact]
         public void Equality_ShouldReturnTrue_ForEqualPatches()
         {
             var first = new Patch<int>(10);

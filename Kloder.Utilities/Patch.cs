@@ -18,6 +18,14 @@ public readonly record struct Patch<T>
         HasValue = true;
         Value = value;
     }
+
+    public void Apply(Action<T?> action)
+    {
+        if (HasValue) action(Value);
+    }
+    
+    public TR Apply<TR>(Func<T?, TR> action, TR defaultValue)
+        => !HasValue ? defaultValue : action(Value);
 }
 
 
