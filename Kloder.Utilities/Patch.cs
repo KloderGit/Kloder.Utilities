@@ -47,6 +47,25 @@ public readonly record struct CollectionPatch<T>
 }
 
 
+public readonly record struct CollectionPatch<TA, TR, TU>
+{
+    /// <summary>Новые элементы для добавления</summary>
+    public List<TA>? Added { get; init; }
+    
+    /// <summary>ID элементов для удаления</summary>
+    public List<TR>? RemovedIds { get; init; }
+    
+    /// <summary>Элементы для обновления (должны содержать Id)</summary>
+    public List<TU>? Updated { get; init; }
+    
+    public bool HasAdded => Added is { Count: > 0 };
+    public bool HasRemoved => RemovedIds is { Count: > 0 };
+    public bool HasUpdated => Updated is { Count: > 0 };
+    public bool IsEmpty => !HasAdded && !HasRemoved && !HasUpdated;
+}
+
+
+
 public class PatchJsonConverterFactory : JsonConverterFactory
 {
     public override bool CanConvert(Type typeToConvert)
