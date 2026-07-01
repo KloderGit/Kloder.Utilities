@@ -96,25 +96,23 @@ public class PatchTests
             var patch = new Patch<int>(42);
 
             var result = patch.Apply(
-                v => Result<int>.Success(v * 2),
-                Result<int>.Success(0));
+                v => v * 2,
+                0);
 
-            Assert.True(result.IsSuccess);
-            Assert.Equal(84, result.Value);
+            Assert.Equal(84, result);
         }
 
         [Fact]
         public void ApplyFunc_ShouldReturnDefaultValue_WhenDefault()
         {
             Patch<int> patch = default;
-            var fallback = Result<string>.Success("fallback");
+            var fallback = "fallback";
 
             var result = patch.Apply(
-                v => Result<string>.Success(v.ToString()!),
+                v => v.ToString(),
                 fallback);
 
-            Assert.True(result.IsSuccess);
-            Assert.Equal("fallback", result.Value);
+            Assert.Equal("fallback", result);
         }
 
         [Fact]
@@ -123,11 +121,10 @@ public class PatchTests
             var patch = new Patch<string?>(null);
 
             var result = patch.Apply(
-                v => Result<string?>.Success(v ?? "was null"),
-                Result<string?>.Success("default"));
+                v => v ?? "was null",
+                "default");
 
-            Assert.True(result.IsSuccess);
-            Assert.Equal("was null", result.Value);
+            Assert.Equal("was null", result);
         }
 
         [Fact]
