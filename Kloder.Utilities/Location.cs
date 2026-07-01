@@ -13,6 +13,7 @@ public abstract record Location
     public abstract string GetShortAddress();
     public abstract string GetAddress();
     public abstract bool IsSameLocation(Location other);
+    public abstract string GetUniqValue();
 }
 
 public abstract record Location<T> : Location
@@ -41,8 +42,11 @@ public record InternetLocation : Location<InternetLocation>
     public override bool IsSameLocation(Location other)
     {
         if (other is InternetLocation == false) return false;
-        return GetShortAddress() == other.GetShortAddress();
+        return GetUniqValue() == other.GetUniqValue();
     }
+
+    public override string GetUniqValue()
+        => GetShortAddress().ToLowerInvariant();
 }
 
 public record BuildingLocation : Location<BuildingLocation>
@@ -83,10 +87,20 @@ public record BuildingLocation : Location<BuildingLocation>
     public override bool IsSameLocation(Location other)
     {
         if (other is BuildingLocation item == false) return false;
-        return City == item.City
-               && Street == item.Street
-               && BuildingNumber == item.BuildingNumber;
+        return GetUniqValue() == other.GetUniqValue();
     }
+
+    public override string GetUniqValue()
+    {
+        return string.Join("|",
+            Normalize(City),
+            Normalize(Street),
+            Normalize(BuildingNumber)
+        );
+    }
+
+    private static string Normalize(string? value)
+        => value?.Trim().ToLowerInvariant() ?? "";
 }
 //
 // public record OutdoorLocation : Location<OutdoorLocation>
@@ -95,6 +109,7 @@ public record BuildingLocation : Location<BuildingLocation>
 //     private readonly string street;
 //     private readonly string nearBuildingNumber;
 //     private readonly string comment;
+//     private readonly string Gps;
 //
 //     private readonly string longitude;
 //     private readonly string altitude;
