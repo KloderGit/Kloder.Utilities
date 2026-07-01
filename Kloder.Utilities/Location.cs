@@ -27,7 +27,7 @@ public record InternetLocation : Location<InternetLocation>
     
     private InternetLocation() {}
 
-    internal InternetLocation(Title title, string url, string? description = null)
+    public InternetLocation(Title title, string url, string? description = null)
     {
         Key = new Key<InternetLocation>();
         Title = title;
