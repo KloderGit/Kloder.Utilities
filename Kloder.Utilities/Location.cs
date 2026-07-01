@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Utilities;
 
-
+[JsonConverter(typeof(LocationJsonConverter))]
 public abstract record Location
 {
     public Title Title { get; protected set; }
