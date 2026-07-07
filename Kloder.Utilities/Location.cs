@@ -23,21 +23,21 @@ public abstract record Location<T> : Location
 
 public record InternetLocation : Location<InternetLocation>
 {
-    public Uri uri { get; }
+    public Uri Uri { get; }
     
     private InternetLocation() {}
 
-    public InternetLocation(Title title, string url, string? description = null)
+    public InternetLocation(Title title, Uri uri, string? description = null)
     {
         Key = new Key<InternetLocation>();
         Title = title;
         Description = description ?? "";
         PlacementType = PlacementType.Internet;
-        uri = new Uri(url);
+        Uri = uri;
     }
 
-    public override string GetShortAddress() => uri.Host;
-    public override string GetAddress() => uri.AbsolutePath;
+    public override string GetShortAddress() => Uri.Host;
+    public override string GetAddress() => Uri.AbsolutePath;
 
     public override bool IsSameLocation(Location other)
     {

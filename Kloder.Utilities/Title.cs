@@ -11,13 +11,11 @@ public record Title
 {
     private string _value;
 
-    public Title()
-    {
-        _value = string.Empty;
-    }
+    private Title() {}
+    
     public Title(string value)
     {
-        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Значение Title не указано");
+        if (string.IsNullOrWhiteSpace(value)) throw new ArgumentException("Название не может быть пустым");
         _value = value;
     }
     
@@ -31,8 +29,8 @@ public class TitleJsonConverter : JsonConverter<Title>
     {
         var titleString = reader.GetString();
         
-        var title = string.IsNullOrEmpty(titleString)
-            ? new Title()
+        var title = string.IsNullOrWhiteSpace(titleString)
+            ? throw new ArgumentException("Название не может быть пустым")
             : new Title(titleString);
 
         return title;
