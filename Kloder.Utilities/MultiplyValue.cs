@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Utilities;
 
@@ -32,6 +34,20 @@ public class  MultiplyValue<T> : IReadOnlyCollection<T>
         var added = _values.Add(value);
         if (added && _values.Count == 1)
             SetDefault(value);
+    }
+    
+    public void Remove(T value)
+    {
+        var isRemoved = _values.Remove(value);
+        if (!isRemoved) return;
+        
+        if(_values.Count > 1)
+            SetDefault(_values.First());
+    }
+    
+    public void Clear()
+    {
+        _values.Clear();
     }
 
     public void SetDefault(T value)

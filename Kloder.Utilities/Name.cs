@@ -11,7 +11,7 @@ public record Name
     public string FirstName { get; }
     public string Patronymic { get; }
 
-    public Name(string lastName, string firstName, string patronymic = "")
+    public Name(string lastName, string firstName, string? patronymic)
     {
         if (string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(firstName)) 
             throw new ArgumentException("Фамилия или Имя не указаны");
