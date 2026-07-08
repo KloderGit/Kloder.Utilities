@@ -41,7 +41,7 @@ public class  MultiplyValue<T> : IReadOnlyCollection<T>
         var isRemoved = _values.Remove(value);
         if (!isRemoved) return;
         
-        if(_values.Count > 1)
+        if (EqualityComparer<T>.Default.Equals(Preferred, value) && _values.Count > 0)
             SetDefault(_values.First());
     }
     

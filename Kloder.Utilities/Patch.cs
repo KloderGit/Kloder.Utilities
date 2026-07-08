@@ -35,13 +35,13 @@ public readonly record struct CollectionPatch<T>
     public List<T>? Added { get; init; }
     
     /// <summary>ID элементов для удаления</summary>
-    public List<Guid>? RemovedIds { get; init; }
+    public List<T>? Removed { get; init; }
     
     /// <summary>Элементы для обновления (должны содержать Id)</summary>
     public List<T>? Updated { get; init; }
     
     public bool HasAdded => Added is { Count: > 0 };
-    public bool HasRemoved => RemovedIds is { Count: > 0 };
+    public bool HasRemoved => Removed is { Count: > 0 };
     public bool HasUpdated => Updated is { Count: > 0 };
     public bool IsEmpty => !HasAdded && !HasRemoved && !HasUpdated;
 }
@@ -53,13 +53,13 @@ public readonly record struct CollectionPatch<TA, TR, TU>
     public List<TA>? Added { get; init; }
     
     /// <summary>ID элементов для удаления</summary>
-    public List<TR>? RemovedIds { get; init; }
+    public List<TR>? Removed { get; init; }
     
     /// <summary>Элементы для обновления (должны содержать Id)</summary>
     public List<TU>? Updated { get; init; }
     
     public bool HasAdded => Added is { Count: > 0 };
-    public bool HasRemoved => RemovedIds is { Count: > 0 };
+    public bool HasRemoved => Removed is { Count: > 0 };
     public bool HasUpdated => Updated is { Count: > 0 };
     public bool IsEmpty => !HasAdded && !HasRemoved && !HasUpdated;
 }

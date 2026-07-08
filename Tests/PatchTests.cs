@@ -287,7 +287,7 @@ public class PatchTests
             Assert.False(patch.HasUpdated);
             Assert.True(patch.IsEmpty);
             Assert.Null(patch.Added);
-            Assert.Null(patch.RemovedIds);
+            Assert.Null(patch.Removed);
             Assert.Null(patch.Updated);
         }
 
@@ -297,7 +297,7 @@ public class PatchTests
             var patch = new CollectionPatch<ItemPatchDto>
             {
                 Added = new List<ItemPatchDto>(),
-                RemovedIds = new List<Guid>(),
+                Removed = new List<ItemPatchDto>(),
                 Updated = new List<ItemPatchDto>()
             };
 
@@ -326,7 +326,7 @@ public class PatchTests
         {
             var patch = new CollectionPatch<ItemPatchDto>
             {
-                RemovedIds = new List<Guid> { Guid.NewGuid() }
+                Removed = new List<ItemPatchDto> { new() { Id = Guid.NewGuid() } }
             };
 
             Assert.False(patch.HasAdded);
@@ -355,7 +355,7 @@ public class PatchTests
             var patch = new CollectionPatch<ItemPatchDto>
             {
                 Added = new List<ItemPatchDto> { new() { Id = Guid.NewGuid(), Name = "A" } },
-                RemovedIds = new List<Guid> { Guid.NewGuid() },
+                Removed = new List<ItemPatchDto> { new() { Id = Guid.NewGuid() } },
                 Updated = new List<ItemPatchDto> { new() { Id = Guid.NewGuid(), Name = "U" } }
             };
 
@@ -375,7 +375,7 @@ public class PatchTests
             var original = new CollectionPatch<ItemPatchDto>
             {
                 Added = new List<ItemPatchDto> { new() { Id = addedId, Name = "Added", Quantity = 1 } },
-                RemovedIds = new List<Guid> { removedId },
+                Removed = new List<ItemPatchDto> { new() { Id = removedId } },
                 Updated = new List<ItemPatchDto> { new() { Id = updatedId, Name = "Updated", Quantity = 2 } }
             };
 
@@ -389,8 +389,8 @@ public class PatchTests
             Assert.Single(restored.Added!);
             Assert.Equal(addedId, restored.Added![0].Id);
 
-            Assert.Single(restored.RemovedIds!);
-            Assert.Equal(removedId, restored.RemovedIds![0]);
+            Assert.Single(restored.Removed!);
+            Assert.Equal(removedId, restored.Removed![0].Id);
 
             Assert.Single(restored.Updated!);
             Assert.Equal(updatedId, restored.Updated![0].Id);
@@ -471,7 +471,7 @@ public class PatchTests
             var original = new Patch<CollectionPatch<ItemPatchDto>>(new CollectionPatch<ItemPatchDto>
             {
                 Added = new List<ItemPatchDto> { new() { Id = addedId, Name = "Added", Quantity = 1 } },
-                RemovedIds = new List<Guid> { removedId },
+                Removed = new List<ItemPatchDto> { new() { Id = removedId} },
                 Updated = new List<ItemPatchDto> { new() { Id = updatedId, Name = "Updated", Quantity = 2 } }
             });
 
@@ -489,7 +489,7 @@ public class PatchTests
             Assert.Equal("Added", collection.Added[0].Name);
             Assert.Equal(1, collection.Added[0].Quantity);
 
-            Assert.Equal(removedId, collection.RemovedIds![0]);
+            Assert.Equal(removedId, collection.Removed![0].Id);
 
             Assert.Equal(updatedId, collection.Updated![0].Id);
             Assert.Equal("Updated", collection.Updated[0].Name);
