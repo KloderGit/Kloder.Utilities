@@ -1,23 +1,21 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Utilities;
 
 
-public class  MultiplyValue<T> : IReadOnlyCollection<T>
+public class  MultiplyValue<T> : IReadOnlyCollection<T> where T : notnull
 {
-    private readonly HashSet<T> _values = [];
+    private readonly Dictionary<T, LinkedListNode<T>> _nodes = new();
+    private readonly LinkedList<T> _order = new();
     public T? Preferred { get; private set; }
-    public int Count => _values.Count;
+    public int Count => _nodes.Count;
 
-    // ReSharper disable once UnusedMember.Local
-    private MultiplyValue() {}
-    
+    public MultiplyValue() {}
+
     public MultiplyValue(IEnumerable<T> values, IEqualityComparer<T>? comparer = null)
     {
-        _values = new HashSet<T>(comparer ?? EqualityComparer<T>.Default);
+        _nodes = new Dictionary<T, LinkedListNode<T>>(comparer ?? EqualityComparer<T>.Default);
 
         foreach (var value in values)
             Add(value);
@@ -25,38 +23,43 @@ public class  MultiplyValue<T> : IReadOnlyCollection<T>
 
     public MultiplyValue(T value, IEqualityComparer<T>? comparer = null)
     {
-        _values = new HashSet<T>(comparer ?? EqualityComparer<T>.Default);
+        _nodes = new Dictionary<T, LinkedListNode<T>>(comparer ?? EqualityComparer<T>.Default);
         Add(value);
     }
-    
+
     public void Add(T value)
     {
-        var added = _values.Add(value);
-        if (added && _values.Count == 1)
+        if (_nodes.ContainsKey(value)) return;
+        _nodes[value] = _order.AddLast(value);
+        if (_nodes.Count == 1)
             SetDefault(value);
     }
-    
+
     public void Remove(T value)
     {
-        var isRemoved = _values.Remove(value);
-        if (!isRemoved) return;
-        
-        if (EqualityComparer<T>.Default.Equals(Preferred, value) && _values.Count > 0)
-            SetDefault(_values.First());
+        if (!_nodes.Remove(value, out var node)) return;
+        _order.Remove(node);
+
+        if (_nodes.Comparer.Equals(Preferred, value))
+            Preferred = _order.First is { } first ? first.Value : default;
     }
-    
+
     public void Clear()
     {
-        _values.Clear();
+        _nodes.Clear();
+        _order.Clear();
+        Preferred = default;
     }
 
     public void SetDefault(T value)
     {
-        if (_values.Contains(value) == false) Add(value);
-        if (!Equals(Preferred, value)) Preferred = value;
+        if (_nodes.ContainsKey(value) == false) Add(value);
+        Preferred = value;
     }
 
-    public IEnumerator<T> GetEnumerator() => _values.GetEnumerator();
+    public bool Contains(T value) => _nodes.ContainsKey(value);
+
+    public IEnumerator<T> GetEnumerator() => _order.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
