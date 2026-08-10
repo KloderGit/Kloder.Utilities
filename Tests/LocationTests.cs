@@ -218,5 +218,84 @@ public class LocationTests
             Assert.Throws<NotSupportedException>(() =>
                 JsonSerializer.Deserialize<Location>(json, Options));
         }
+
+        [Fact]
+        public void Deserialize_InvalidPlacementTypeTokenKind_ShouldThrowJsonException()
+        {
+            var json = """{ "PlacementType": true, "Title": "Офис" }""";
+
+            Assert.Throws<JsonException>(() =>
+                JsonSerializer.Deserialize<Location>(json, Options));
+        }
+
+        [Fact]
+        public void Deserialize_UnknownStringPlacementType_ShouldThrowJsonException()
+        {
+            var json = """{ "PlacementType": "NotARealType", "Title": "Офис" }""";
+
+            Assert.Throws<JsonException>(() =>
+                JsonSerializer.Deserialize<Location>(json, Options));
+        }
+
+        [Fact]
+        public void Deserialize_DifferentCasePlacementType_WithCaseSensitiveOptions_ShouldThrowJsonException()
+        {
+            var json = """
+                {
+                    "placementtype": 0,
+                    "Title": "Офис",
+                    "City": "Москва",
+                    "Street": "Тверская",
+                    "BuildingNumber": "1"
+                }
+                """;
+
+            Assert.Throws<JsonException>(() =>
+                JsonSerializer.Deserialize<Location>(json, Options));
+        }
+
+        [Fact]
+        public void Deserialize_DifferentCasePlacementType_WithCaseInsensitiveOptions_ShouldReturnBuildingLocation()
+        {
+            var caseInsensitiveOptions = new JsonSerializerOptions(Options)
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var json = """
+                {
+                    "placementtype": 0,
+                    "Title": "Офис",
+                    "City": "Москва",
+                    "Street": "Тверская",
+                    "BuildingNumber": "1"
+                }
+                """;
+
+            var location = JsonSerializer.Deserialize<Location>(json, caseInsensitiveOptions);
+
+            Assert.IsType<BuildingLocation>(location);
+        }
+
+        [Fact]
+        public void Deserialize_UppercasePlacementType_WithCaseInsensitiveOptions_ShouldReturnInternetLocation()
+        {
+            var caseInsensitiveOptions = new JsonSerializerOptions(Options)
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var json = """
+                {
+                    "PLACEMENTTYPE": "Internet",
+                    "Title": "Сайт",
+                    "uri": "https://example.com"
+                }
+                """;
+
+            var location = JsonSerializer.Deserialize<Location>(json, caseInsensitiveOptions);
+
+            Assert.IsType<InternetLocation>(location);
+        }
     }
 }

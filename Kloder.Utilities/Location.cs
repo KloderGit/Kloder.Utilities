@@ -146,15 +146,15 @@ public sealed class LocationJsonConverter : JsonConverter<Location>
     {
         using var doc = JsonDocument.ParseValue(ref reader);
         var root = doc.RootElement;
-
-        if (!root.TryGetProperty(nameof(Location.PlacementType), out var ptProp))
+        
+        if (!TryGetPlacementTypeProperty(out var placementProperty))
             throw new JsonException($"'{nameof(Location.PlacementType)}' is required for Location polymorphic deserialization.");
 
-        var placementType = ptProp.ValueKind switch
+        var placementType = placementProperty.ValueKind switch
         {
-            JsonValueKind.Number => (PlacementType)ptProp.GetInt32(),
-            JsonValueKind.String when Enum.TryParse<PlacementType>(ptProp.GetString(), true, out var e) => e,
-            _ => throw new JsonException($"Invalid '{nameof(Location.PlacementType)}' token kind: {ptProp.ValueKind}.")
+            JsonValueKind.Number => (PlacementType)placementProperty.GetInt32(),
+            JsonValueKind.String when Enum.TryParse<PlacementType>(placementProperty.GetString(), true, out var e) => e,
+            _ => throw new JsonException($"Invalid '{nameof(Location.PlacementType)}' token kind: {placementProperty.ValueKind}.")
         };
 
         var targetType = placementType switch
@@ -166,7 +166,32 @@ public sealed class LocationJsonConverter : JsonConverter<Location>
         };
 
         var json = root.GetRawText();
+        
         return (Location?)JsonSerializer.Deserialize(json, targetType, options);
+
+        
+        bool TryGetPlacementTypeProperty(out JsonElement element)
+        {
+            var comparison = options.PropertyNameCaseInsensitive
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+            
+            element = default;
+            
+            var found = false;
+            
+            foreach (var property in root.EnumerateObject())
+            {
+                if (!string.Equals(property.Name, nameof(Location.PlacementType), comparison)) 
+                    continue;
+                
+                element = property.Value;
+                found = true;
+                break;
+            }
+
+            return found;
+        }
     }
 
     public override void Write(Utf8JsonWriter writer, Location value, JsonSerializerOptions options)
