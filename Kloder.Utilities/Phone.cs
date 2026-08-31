@@ -19,12 +19,11 @@ public partial class Phone : IEquatable<Phone>, IEquatable<string>
     public Phone(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (!IsValidPhoneNumber(value))
+        if (!TryGetValidDigits(value, out var digits))
             throw new ArgumentException("Invalid phone number", nameof(value));
 
-        var digits = NormalizeDigits(value);
         Digits = digits;
-        Value  = "+" + digits; 
+        Value  = "+" + digits;
     }
 
     public bool Equals(Phone? other) =>
@@ -40,16 +39,16 @@ public partial class Phone : IEquatable<Phone>, IEquatable<string>
         _        => false
     };
     
-    private static string NormalizeDigits(string input)
+    private static string NormalizeDigits(string input) => NormalizeRawDigits(GetJustDigits(input));
+
+    private static string NormalizeRawDigits(string digits)
     {
-        var d = GetJustDigits(input.Trim());
+        if (digits.StartsWith("00")) digits = digits[2..];
 
-        if (d.StartsWith("00")) d = d[2..];
+        if (digits.Length == 11 && digits[0] == '8')
+            digits = "7" + digits[1..];
 
-        if (d.Length == 11 && d[0] == '8')
-            d = "7" + d[1..];
-
-        return d;
+        return digits;
     }
     
     public override int GetHashCode() => Digits.GetHashCode(StringComparison.Ordinal);
@@ -71,11 +70,13 @@ public partial class Phone : IEquatable<Phone>, IEquatable<string>
     public static bool operator !=(string? left, Phone? right) => !(left == right);
 
     
+    public static bool IsValid(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && TryGetValidDigits(value, out _);
+
     public static bool TryParse(string? value, out Phone? phone)
     {
         phone = null;
         if (string.IsNullOrWhiteSpace(value)) return false;
-        if (!IsValidPhoneNumber(value)) return false;
 
         try
         {
@@ -89,19 +90,16 @@ public partial class Phone : IEquatable<Phone>, IEquatable<string>
         }
     }
 
-    private static bool IsValidPhoneNumber(string phoneNumber)
+    private static bool TryGetValidDigits(string phoneNumber, out string digits)
     {
+        digits = string.Empty;
         if (!PhoneNumberRegex().IsMatch(phoneNumber)) return false;
 
-        var trimmed = phoneNumber.Trim();
-        var hasCountryCodeMarker = trimmed.StartsWith('+') || GetJustDigits(trimmed).StartsWith('8');
+        var normalized = NormalizeDigits(phoneNumber);
+        if (normalized.Length != 11 || normalized[0] != '7') return false;
 
-        var digits = NormalizeDigits(phoneNumber);
-
-        if (hasCountryCodeMarker)
-            return digits.Length == 11 && digits[0] == '7';
-
-        return digits.Length == 10 || (digits.Length == 11 && digits[0] == '7');
+        digits = normalized;
+        return true;
     }
 
 

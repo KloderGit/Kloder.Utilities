@@ -31,7 +31,6 @@ public class UnitTest1
         [Theory]
         [InlineData("+71234567890", "+79876543210")]
         [InlineData("+71234567890", "89876543210")]
-        [InlineData("+71234567890", "9876543210")]
         public void Equals_ShouldReturnFalse_WhenDifferentRussianPhonesGiven(string phoneNumber1, string phoneNumber2)
         {
             Phone phone1 = new Phone(phoneNumber1);
@@ -44,7 +43,6 @@ public class UnitTest1
         [Theory]
         [InlineData("+71234567890")]
         [InlineData("81234567890")]
-        [InlineData("1234567890")]
         public void TryParse_ShouldReturnTrue_WhenValidRussianPhoneNumberGiven(string phoneNumber)
         {
             Assert.True(Phone.TryParse(phoneNumber, out Phone result));
@@ -54,6 +52,8 @@ public class UnitTest1
         [InlineData("+71234")]
         [InlineData("8123arcg")]
         [InlineData("abc1234567890")]
+        [InlineData("1234567890")]
+        [InlineData("9876543210")]
         public void TryParse_ShouldReturnFalse_WhenInvalidPhoneNumberGiven(string phoneNumber)
         {
             Assert.False(Phone.TryParse(phoneNumber, out Phone result));
@@ -62,7 +62,6 @@ public class UnitTest1
         [Theory]
         [InlineData("+71234567890")]
         [InlineData("81234567890")]
-        [InlineData("1234567890")]
         public void OperatorOverloads_ShouldWorkCorrectly(string phoneNumber)
         {
             Phone phone = (Phone)phoneNumber;
