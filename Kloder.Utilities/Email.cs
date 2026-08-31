@@ -20,7 +20,7 @@ public partial class Email : IEquatable<Email>, IEquatable<string>
 
         var normalized = value.Trim().ToLowerInvariant();
 
-        if (!IsValidEmail(normalized))
+        if (!IsValid(normalized))
             throw new ArgumentException("Invalid email address", nameof(value));
 
         _value = normalized;
@@ -66,7 +66,7 @@ public partial class Email : IEquatable<Email>, IEquatable<string>
     public static bool operator !=(string? left, Email? right) => !(left == right);
     
     
-    private static bool IsValidEmail(string email) => EmailTemplateRegExp().IsMatch(email);
+    public static bool IsValid(string email) => EmailTemplateRegExp().IsMatch(email);
     
     
     public static bool TryParse(string? value, out Email? email)
@@ -75,7 +75,7 @@ public partial class Email : IEquatable<Email>, IEquatable<string>
         if (string.IsNullOrWhiteSpace(value)) return false;
 
         var normalized = value.Trim().ToLowerInvariant();
-        if (!IsValidEmail(normalized)) return false;
+        if (!IsValid(normalized)) return false;
 
         email = new Email(normalized);
         return true;
