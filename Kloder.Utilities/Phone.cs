@@ -89,7 +89,20 @@ public partial class Phone : IEquatable<Phone>, IEquatable<string>
         }
     }
 
-    private static bool IsValidPhoneNumber(string phoneNumber) => PhoneNumberRegex().IsMatch(phoneNumber);
+    private static bool IsValidPhoneNumber(string phoneNumber)
+    {
+        if (!PhoneNumberRegex().IsMatch(phoneNumber)) return false;
+
+        var trimmed = phoneNumber.Trim();
+        var hasCountryCodeMarker = trimmed.StartsWith('+') || GetJustDigits(trimmed).StartsWith('8');
+
+        var digits = NormalizeDigits(phoneNumber);
+
+        if (hasCountryCodeMarker)
+            return digits.Length == 11 && digits[0] == '7';
+
+        return digits.Length == 10 || (digits.Length == 11 && digits[0] == '7');
+    }
 
 
     private static string GetJustDigits(string input)
@@ -98,9 +111,9 @@ public partial class Phone : IEquatable<Phone>, IEquatable<string>
         var arr = input.Where(char.IsDigit).ToArray();
         return new string(arr);
     }
-    
-    
-    [GeneratedRegex(@"^(\+?\d{1,4}[\s-]?)?\(?\d{2,4}\)?[\s-]?\d{2,4}[\s-]?\d{1,4}[\s-]?\d{0,4}$")]
+
+
+    [GeneratedRegex(@"^\+?[\d\s()-]+$")]
     private static partial Regex PhoneNumberRegex();
 }
 
