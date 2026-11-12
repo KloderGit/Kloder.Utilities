@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Utilities;
 
@@ -62,6 +63,46 @@ public readonly record struct CollectionPatch<TA, TR, TU>
     public bool HasRemoved => Removed is { Count: > 0 };
     public bool HasUpdated => Updated is { Count: > 0 };
     public bool IsEmpty => !HasAdded && !HasRemoved && !HasUpdated;
+}
+
+
+/// <summary>
+/// Регистрация типа Patch, чтоб избегать сериализации не установленных явно полей как null.
+/// Пример регистрации - 
+/// builder.Services
+///   .AddControllers()
+///   .AddJsonOptions(options =>
+///    {
+///        options.JsonSerializerOptions.AddPatchSupport();
+///    }); 
+/// </summary>
+public static class PatchJsonRegisterExtensions
+{
+    public static void AddPatchSupport(this JsonSerializerOptions options)
+    {
+        options.Converters.Add(new PatchJsonConverterFactory());
+
+        var resolver = options.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver();
+
+        options.TypeInfoResolver = resolver.WithAddedModifier(typeInfo =>
+        {
+            foreach (var property in typeInfo.Properties)
+            {
+                var type = property.PropertyType;
+
+                if (!type.IsGenericType || type.GetGenericTypeDefinition() != typeof(Patch<>))
+                    continue;
+
+                var hasValue = type.GetProperty(nameof(Patch<int>.HasValue))!;
+                var previous = property.ShouldSerialize;
+
+                property.ShouldSerialize = (obj, value) =>
+                    value is not null &&
+                    (bool)hasValue.GetValue(value)! &&
+                    (previous?.Invoke(obj, value) ?? true);
+            }
+        });
+    }
 }
 
 
