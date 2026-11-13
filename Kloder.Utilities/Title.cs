@@ -21,6 +21,8 @@ public record Title
     
     public static implicit operator string(Title x) => x._value;
     public static explicit operator Title(string x) => new Title(x);
+    
+    public override string ToString() => _value;
 }
 
 public class TitleJsonConverter : JsonConverter<Title>
